@@ -253,6 +253,37 @@ def check_outputs(rep: Report, root: Path, required_dir: Path | None) -> None:
         rep.add("산출물", PASS, "%d개 파일" % len(files))
 
 
+def check_tests(rep: Report, root: Path) -> None:
+    """테스트가 실제로 돌았는지 확인. skip만 있고 실행된 게 없으면 통과가 아니다."""
+    tests_dir = root / "tests"
+    has_dir = tests_dir.is_dir() and any(tests_dir.glob("test_*.py"))
+
+    if has_dir:
+        rc, out = run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"], root, timeout=60)
+        label = "tests/"
+    else:
+        tpl = root / "tools" / "test_template.py"
+        if not tpl.exists():
+            rep.add("테스트", SKIP, "tests/ 도 tools/test_template.py 도 없음 - 요구사항을 테스트로 옮기지 않았다")
+            return
+        rc, out = run([sys.executable, str(tpl)], root, timeout=60)
+        label = "tools/test_template.py (템플릿만 있음 - 과제 테스트는 tests/ 에 쓸 것)"
+
+    ran = re.search(r"Ran (\d+) tests?", out)
+    n = int(ran.group(1)) if ran else 0
+    skipped = re.search(r"skipped=(\d+)", out)
+    nskip = int(skipped.group(1)) if skipped else 0
+
+    if n == 0:
+        rep.add("테스트", FAIL, "실행된 테스트 0개 (%s) - 이 결과를 '통과'로 읽지 말 것" % label)
+    elif n == nskip:
+        rep.add("테스트", FAIL, "%d개 전부 skip (%s) - 실제로 검증된 게 없다" % (n, label))
+    elif rc != 0:
+        rep.add("테스트", FAIL, "실패 있음 · Ran %d skip %d (%s)" % (n, nskip, label))
+    else:
+        rep.add("테스트", PASS, "Ran %d · skip %d · %s" % (n, nskip, label))
+
+
 def check_git_state(rep: Report, root: Path) -> None:
     rc, out = run(["git", "rev-parse", "--is-inside-work-tree"], root)
     if rc != 0:
@@ -290,6 +321,7 @@ def main() -> int:
     check_readme_template_leftovers(rep, root)
     check_secrets(rep, root)
     check_outputs(rep, root, args.require)
+    check_tests(rep, root)
     check_git_state(rep, root)
 
     if args.json:

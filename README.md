@@ -36,7 +36,7 @@ scripts/
 tools/
   eda_bootstrap.py     데이터 첫 파악 — 스키마·결측·이상치 (손으로 열어보지 말 것)
   verdict_engine.py    판정 엔진 — Rule/limit/direction/inclusive 경계값 + 예외 우선
-  test_template.py     요구사항 ↔ 테스트 1:1 매핑 템플릿
+  test_template.py     요구사항 ↔ 테스트 1:1 매핑 템플릿 (표준 unittest, pytest 불필요)
 ```
 
 ## 쓰는 법
@@ -122,7 +122,8 @@ exit 2  검사한 항목이 0개 — 이 결과를 '통과'로 읽지 말 것
 | 시간대 함정을 실행 전에 잡는다 | `preflight`의 datetime 체크가 `2026-10-31 10:00:00`을 `naive`로 표시 |
 | 표준 라이브러리만 쓴다 | `tools/*.py`, `scripts/*.py` import 전부 stdlib |
 | 비밀키 스캔이 조용히 통과하지 않는다 | 스캔 파일 0개면 PASS가 아니라 `SKIP` + 경고 문구 |
-| 도구 3종이 실행된다 | `eda_bootstrap.py`, `verdict_engine.py`, `test_template.py` 실행 확인 |
+| 도구 3종이 실행된다 (pytest 없이) | `eda_bootstrap.py`, `verdict_engine.py`, `test_template.py` 실행 확인 → `Ran 8 tests` |
+| 테스트 전부 skip이면 통과가 아니다 | `preflight`가 `n == nskip` 이면 FAIL 처리 |
 
 ## 라이선스
 
